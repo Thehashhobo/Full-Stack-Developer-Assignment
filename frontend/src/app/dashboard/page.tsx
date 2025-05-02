@@ -15,7 +15,7 @@ import {
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import dayjs, { Dayjs } from 'dayjs';
-import { useState } from 'react';
+import { useState, useEffect} from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Dashboard() {
@@ -30,10 +30,38 @@ export default function Dashboard() {
   const [carrier, setCarrier] = useState<string | null>(null);
 
   /* ---------------- pagination state ---------------- */
+
+  const rowHeight = 52; // Default row height for MUI DataGrid
+  const toolbarHeight = 120; // Approximate height of the toolbar and other elements
+
   const [paginationModel, setPaginationModel] = useState({
     page: 0,
-    pageSize: 15,
+    pageSize: 15, // Default page size
   });
+
+  useEffect(() => {
+    // Function to calculate the number of rows that fit in the viewport
+    const calculatePageSize = () => {
+      const screenHeight = window.innerHeight; // Get the viewport height
+      const devicePixelRatio = window.devicePixelRatio || 1; // Get the device pixel ratio
+      const normalizedHeight = screenHeight * devicePixelRatio; // Normalize the screen height
+      const availableHeight = normalizedHeight - toolbarHeight * devicePixelRatio; // Adjust for toolbar height
+      const rowsPerPage = Math.floor(availableHeight / (rowHeight * devicePixelRatio)); // Calculate rows per page
+
+      // Update the pagination model with the calculated page size
+      setPaginationModel((prev) => ({
+        ...prev,
+        pageSize: rowsPerPage > 0 ? rowsPerPage : 1, // Ensure at least 1 row per page
+      }));
+      console.log('Rows per page:', rowsPerPage); // Debugging log
+    };
+
+    calculatePageSize(); // Initial calculation
+
+    // Recalculate on window resize
+    window.addEventListener('resize', calculatePageSize);
+    return () => window.removeEventListener('resize', calculatePageSize);
+  }, []); // Empty dependency array ensures this runs once on mount
 
   /* ---------------- modal state ---------------- */
   const [open, setOpen] = useState(false);
@@ -49,17 +77,18 @@ export default function Dashboard() {
     setSelectedRow(null);
   };
 
-  const handleStatusUpdate = async (newStatus: string) => {
+  const handleStatusUpdate = (newStatus: string) => {
     if (selectedRow) {
-      // Simulate an API call to update the status
-      console.log(`Updating shipment ID ${selectedRow.id} to status: ${newStatus}`);
-      setSelectedRow({ ...selectedRow, status: newStatus });
+      const updatedData = data.map((row) =>
+        row.id === selectedRow.id ? { ...row, status: newStatus } : row
+      );
+      setData(updatedData);
       handleClose();
     }
   };
 
   /* -------------- temporary data -------------- */
-  const data = [
+  const [data, setData] = useState([
     {
       id: 1,
       origin: 'New York',
@@ -222,7 +251,7 @@ export default function Dashboard() {
         eta: dayjs().subtract(1, 'days').toISOString(),
         status: 'Delivered',
       },
-  ];
+  ]);
 
   const isLoading = false; // Simulate loading state
   const error = null; // Simulate no error
@@ -273,7 +302,7 @@ export default function Dashboard() {
           variant="outlined"
           size="small"
           onClick={() => handleOpen(params.row)}
-          sx={{ visibility: 'hidden' }}
+        //   sx={{ visibility: 'hidden' }}
         >
           Update Status
         </Button>
@@ -370,7 +399,7 @@ export default function Dashboard() {
           loading={isLoading}
           paginationModel={paginationModel}
           onPaginationModelChange={setPaginationModel}
-          pageSizeOptions={[10, 25, 50]}
+          pageSizeOptions={[paginationModel.pageSize]}
           disableRowSelectionOnClick
         />
       </Box>
