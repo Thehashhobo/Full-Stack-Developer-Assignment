@@ -65,7 +65,7 @@ namespace HW.API
 
             app.UseHttpsRedirection();
 
-            app.UseStaticFiles();
+            // app.UseStaticFiles(); \\ No static files in this project
 
             app.UseRouting();
 
