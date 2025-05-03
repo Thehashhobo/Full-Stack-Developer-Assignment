@@ -27,11 +27,11 @@ export type NewShipment = {
  * Adds a new shipment
  */
 export async function addShipment(data: NewShipment) {
-  console.log('Data sent to backend:', {
-    ...data,
-    shipDate: data.shipDate.toISOString(),
-    eta: data.eta.toISOString(),
-  });
+  // console.log('Data sent to backend:', {
+  //   ...data,
+  //   shipDate: data.shipDate.toISOString(),
+  //   eta: data.eta.toISOString(),
+  // });
   await axios.post(`${API_BASE_URL}/api/shipment`, {
     ...data,
     shipDate: data.shipDate.toISOString(),
@@ -46,6 +46,7 @@ export async function addShipment(data: NewShipment) {
  * Fetches shipment list with optional filters
  */
 export async function fetchShipments(filters: ShipmentFilters) {
+  // console.log('Filters sent to backend:', filters); // Debugging line
   const response = await axios.get(`${API_BASE_URL}/api/shipment`, {
     params: {
       status: filters.status || null,
@@ -55,7 +56,7 @@ export async function fetchShipments(filters: ShipmentFilters) {
 
     },
   });
-  return response.data.shipments;
+  return response.data;
 }
 
 /**

@@ -27,7 +27,7 @@ namespace HW.Infrastructure
         public async Task<IEnumerable<Shipment>> GetAllShipmentsAsync(
             string? status = null,
             int? carrier = null,
-            int pageNumber = 1,
+            int pageNumber = 0,
             int pageSize = 10
         )
         {
@@ -47,7 +47,7 @@ namespace HW.Infrastructure
 
             // Apply pagination
             return await query
-                .Skip((pageNumber - 1) * pageSize)
+                .Skip(pageNumber * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
         }

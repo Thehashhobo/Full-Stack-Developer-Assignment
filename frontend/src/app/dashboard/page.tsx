@@ -32,8 +32,10 @@ export default function Dashboard() {
   const rowHeight = 52; // Default row height for MUI DataGrid
   const toolbarHeight = 120; // Approximate height of the toolbar and other elements
 
+  const [totalItems, setTotalItems] = useState(15); // Total number of items for pagination
+
   const [paginationModel, setPaginationModel] = useState({
-    page: 0,
+    page: 1, // Default page number
     pageSize: 15, // Default page size
   });
 
@@ -76,17 +78,20 @@ export default function Dashboard() {
 
   /* ---------------- Fetch Data ---------------- */
   const fetchData = async () => {
-    console.log('carriers', carrier ? carriers.nameToId[carrier] : null); // Debugging line
+    // console.log('carriers', carrier ? carriers.nameToId[carrier] : null); // Debugging line
     setIsLoading(true);
     setError(null);
 
     try {
-      const shipments = await fetchShipments({
+      const fetchedData = await fetchShipments({
         page: paginationModel.page,
         pageSize: paginationModel.pageSize,
         status,
         carrier: carrier ? carriers.nameToId[carrier] : null
-      }); // Use API function
+      });
+      // console.log('shipments', fetchedData); // Debugging line
+      const shipments = fetchedData.shipments || []; // Ensure shipments is an array
+      setTotalItems(fetchedData.totalCount || 15); // Set total items for pagination
 
       // Add carrierId to the data and keep the translated carrier name
       const updatedData = shipments.map((shipment: any) => ({
@@ -108,7 +113,7 @@ export default function Dashboard() {
     if (!isCarriersLoading) {
       fetchData();
     }
-  }, [paginationModel.page, paginationModel.pageSize, status, carrier ? carriers.nameToId[carrier] : null, isCarriersLoading]);
+  }, [paginationModel.page, paginationModel.pageSize, status, carrier ? carriers.nameToId[carrier] : null]);
 
   /* ----------------- grid columns ----------------- */
   const columns: GridColDef[] = [
@@ -232,10 +237,12 @@ export default function Dashboard() {
       >
         <DataGrid
           rows={data}
+          paginationMode="server"
+          rowCount={totalItems}
           columns={columns}
           loading={isLoading}
           paginationModel={paginationModel}
-          onPaginationModelChange={setPaginationModel}
+          onPaginationModelChange={(model) => setPaginationModel(model)}
           pageSizeOptions={[paginationModel.pageSize]}
           disableRowSelectionOnClick
         />

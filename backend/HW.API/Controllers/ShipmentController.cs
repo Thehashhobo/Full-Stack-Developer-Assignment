@@ -22,7 +22,7 @@ namespace HW.API.Controllers
         public async Task<IActionResult> GetAllShipments(
             [FromQuery] string? status,
             [FromQuery] int? carrier,
-            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageNumber = 0,
             [FromQuery] int pageSize = 10)
         {
             var shipments = await _service.GetAllShipmentsAsync(new ShipmentQueryDTO

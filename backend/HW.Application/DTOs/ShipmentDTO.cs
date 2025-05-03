@@ -30,7 +30,7 @@ namespace HW.Application.DTOs
         public int? Carrier { get; set; } 
 
         // Pagination properties
-        public int PageNumber { get; set; } = 1; 
+        public int PageNumber { get; set; } = 0; 
         public int PageSize { get; set; } = 10; 
     }
 
@@ -38,7 +38,7 @@ namespace HW.Application.DTOs
     {
         public IEnumerable<ShipmentDTO> Shipments { get; set; } = new List<ShipmentDTO>(); // List of shipments
         public int CurrentPage { get; set; } 
-        public int PageSize { get; set; } 
+        public int PageSize { get; set; } // check if requested page size matches
         public int TotalCount { get; set; } // Total number of shipments
         public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize); // Total pages
     }

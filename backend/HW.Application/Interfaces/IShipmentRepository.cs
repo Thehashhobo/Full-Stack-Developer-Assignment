@@ -14,7 +14,7 @@ namespace HW.Application.Interfaces
             string? status = null, 
             int? carrier = null, 
             //pagination
-            int pageNumber = 1, 
+            int pageNumber = 0, 
             int pageSize = 12
         );
         // also for pagination
