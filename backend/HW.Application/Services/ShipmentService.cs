@@ -9,15 +9,18 @@ namespace HW.Application.Services
     {
         private readonly IShipmentRepository _shipmentRepository;
         private readonly IMapper _mapper;
+        private readonly ILogService _logger;
 
-        public ShipmentService(IShipmentRepository shipmentRepository, IMapper mapper)
+        public ShipmentService(IShipmentRepository shipmentRepository, IMapper mapper, ILogService logger)
         {
             _shipmentRepository = shipmentRepository;
             _mapper = mapper;
+            _logger = logger;
         }
 
         public async Task<PaginatedShipmentsDTO> GetAllShipmentsAsync(ShipmentQueryDTO queryDTO)
         {
+            _logger.Info($"Fetching shipments for page {queryDTO.PageNumber}, status: {queryDTO.Status}, carrier: {queryDTO.Carrier}");
             // Fetch shipments for the current page
             var shipments = await _shipmentRepository.GetAllShipmentsAsync(
                 queryDTO.Status,
@@ -57,17 +60,20 @@ namespace HW.Application.Services
 
         public async Task AddShipmentAsync(ShipmentDTO shipmentDTO)
         {
+            _logger.Info($"Adding new shipment from {shipmentDTO.Origin} to {shipmentDTO.Destination}, from {shipmentDTO.ShipDate} to {shipmentDTO.ETA}");
             // Map DTO to domain entity
             var shipment = _mapper.Map<Shipment>(shipmentDTO);
 
             // Add shipment to the repository
             await _shipmentRepository.AddShipmentAsync(shipment);
+            _logger.Info("Shipment successfully added.");
         }
 
     public async Task UpdateShipmentAsync(int id, UpdateShipmentStatusDTO updateShipmentStatusDTO)
     {
-        // Fetch the shipment by ID
-        var shipment = await _shipmentRepository.GetShipmentByIdAsync(id);
+        _logger.Info($"Attempting to update shipment ID {id}");
+            // Fetch the shipment by ID
+            var shipment = await _shipmentRepository.GetShipmentByIdAsync(id);
 
         if (shipment == null)
         {

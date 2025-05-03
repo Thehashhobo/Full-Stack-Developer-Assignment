@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using HW.Application.Interfaces;
 using HW.Infrastructure;
 using HW.Application.Services;
+using Serilog;
 
 namespace HW.API
 {
@@ -12,19 +13,28 @@ namespace HW.API
     {
         public static void Main(string[] args)
         {
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Information()
+                .WriteTo.Console()
+                .WriteTo.File("Logs/log-.txt", rollingInterval: RollingInterval.Day)
+                .CreateLogger();
+
+            Log.Information("Application Starting");
             var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
             var builder = WebApplication.CreateBuilder(args);
+            builder.Host.UseSerilog();
 
+            builder.Services.AddScoped<ILogService, LogService>();
             // Add CORS policy
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy(name: MyAllowSpecificOrigins,
                                   policy =>
                                   {
-                                      policy.WithOrigins("http://localhost:3000") // Allow requests from your frontend
+                                      policy.WithOrigins("http://localhost:3000") // Allow requests from frontend
                                             .AllowAnyHeader() // Allow any headers
-                                            .AllowAnyMethod(); // Allow any HTTP methods (GET, POST, etc.)
+                                            .AllowAnyMethod(); // Allow any HTTP methods
                                   });
             });
 

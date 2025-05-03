@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using HW.Domain.Entities;
+﻿using HW.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace HW.Infrastructure.Data;

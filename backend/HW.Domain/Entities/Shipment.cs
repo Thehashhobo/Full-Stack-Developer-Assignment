@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace HW.Domain.Entities;
+﻿namespace HW.Domain.Entities;
 
 public partial class Shipment
 {

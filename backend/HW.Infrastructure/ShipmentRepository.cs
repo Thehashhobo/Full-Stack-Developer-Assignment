@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using HW.Application.Interfaces;
+﻿using HW.Application.Interfaces;
 using HW.Domain.Entities;
 using HW.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;

@@ -1,5 +1,4 @@
 "use client";
-
 import { ThemeProvider, CssBaseline, createTheme } from '@mui/material';
 import { green } from '@mui/material/colors';
 import { PropsWithChildren } from 'react';

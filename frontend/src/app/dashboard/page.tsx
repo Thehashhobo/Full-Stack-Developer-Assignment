@@ -1,6 +1,5 @@
 'use client';
-
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridCellParams } from '@mui/x-data-grid';
 import {
   Box,
   Chip,
@@ -21,7 +20,9 @@ import { useCarrierContext } from '../../components/CarrierContext'; // Import C
 
 export default function Dashboard() {
   const router = useRouter();
-
+  const [data, setData] = useState<any[]>([]); // Data for the DataGrid
+  const [isLoading, setIsLoading] = useState(false); // Loading state
+  const [error, setError] = useState<string | null>(null); // Error state
   const { carriers, isLoading: isCarriersLoading, error: carriersError } = useCarrierContext(); // Use CarrierContext
 
   /* ---------------- toolbar state ---------------- */
@@ -29,20 +30,27 @@ export default function Dashboard() {
   const [carrier, setCarrier] = useState<string | null>(null);
 
   /* ---------------- pagination state ---------------- */
-  const rowHeight = 52; // Default row height for MUI DataGrid
-  const toolbarHeight = 120; // Approximate height of the toolbar and other elements
-
   const [totalItems, setTotalItems] = useState(15); // Total number of items for pagination
-
+  const rowHeight = 52; // Default row height for MUI DataGrid
+  const toolbarHeight = 160; // Approximate height of the toolbar and other elements
   const [paginationModel, setPaginationModel] = useState({
-    page: 1, // Default page number
-    pageSize: 15, // Default page size
+    page: 0,
+    pageSize: 1, // Default page size
   });
+   // Function to calculate the number of rows that fit in the viewport
+   const calculatePageSize = () => {
+    const screenHeight = window.innerHeight; // Get the viewport height
+    const devicePixelRatio = window.devicePixelRatio || 1; // Get the device pixel ratio
+    const normalizedHeight = screenHeight * devicePixelRatio; // Normalize the screen height
+    const availableHeight = normalizedHeight - toolbarHeight * devicePixelRatio; // Adjust for toolbar height
+    const rowsPerPage = Math.floor(availableHeight / (rowHeight * devicePixelRatio)); // Calculate rows per page
 
-  const [data, setData] = useState<any[]>([]); // Data for the DataGrid
-  const [isLoading, setIsLoading] = useState(false); // Loading state
-  const [error, setError] = useState<string | null>(null); // Error state
-
+    // Update the pagination model with the calculated page size
+    setPaginationModel((prev) => ({
+      ...prev,
+      pageSize: rowsPerPage > 0 ? rowsPerPage : 1, // Ensure at least 1 row per page
+    }));
+  };
   /* ---------------- modal state ---------------- */
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<any>(null);
@@ -78,7 +86,6 @@ export default function Dashboard() {
 
   /* ---------------- Fetch Data ---------------- */
   const fetchData = async () => {
-    // console.log('carriers', carrier ? carriers.nameToId[carrier] : null); // Debugging line
     setIsLoading(true);
     setError(null);
 
@@ -89,9 +96,8 @@ export default function Dashboard() {
         status,
         carrier: carrier ? carriers.nameToId[carrier] : null
       });
-      // console.log('shipments', fetchedData); // Debugging line
       const shipments = fetchedData.shipments || []; // Ensure shipments is an array
-      setTotalItems(fetchedData.totalCount || 15); // Set total items for pagination
+      setTotalItems(fetchedData.totalCount || 10); // Set total items for pagination
 
       // Add carrierId to the data and keep the translated carrier name
       const updatedData = shipments.map((shipment: any) => ({
@@ -109,8 +115,16 @@ export default function Dashboard() {
     }
   };
 
+  // calculate page size after carriers are loaded
   useEffect(() => {
     if (!isCarriersLoading) {
+      calculatePageSize();
+    }
+  }, [isCarriersLoading]);
+
+  // Fetch data when page, filter or sort changes
+  useEffect(() => {
+    if (paginationModel.pageSize > 1) {
       fetchData();
     }
   }, [paginationModel.page, paginationModel.pageSize, status, carrier ? carriers.nameToId[carrier] : null]);
@@ -126,14 +140,19 @@ export default function Dashboard() {
       field: 'shipDate',
       headerName: 'Ship Date',
       flex: 1,
-      valueGetter: ({ value }) => dayjs(value).format('YYYY-MM-DD'),
-      sortComparator: (v1, v2) => dayjs(v1).unix() - dayjs(v2).unix(),
+      valueGetter: (params: GridCellParams) => {
+        if (!params) return ''; 
+        return dayjs(params as any).format('YYYY-MM-DD hA'); 
+      },
     },
     {
       field: 'eta',
       headerName: 'ETA',
       flex: 1,
-      valueGetter: ({ value }) => dayjs(value).format('YYYY-MM-DD'),
+      valueGetter: (params: GridCellParams) => {
+        if (!params) return ''; 
+        return dayjs(params as any).format('YYYY-MM-DD hA'); 
+      },
     },
     {
       field: 'status',
@@ -156,6 +175,9 @@ export default function Dashboard() {
     {
       field: 'actions',
       headerName: 'Actions',
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
       flex: 1,
       renderCell: (params) => (
         <Button
@@ -171,7 +193,20 @@ export default function Dashboard() {
 
   if (error) return <p>{error}</p>;
   if (carriersError) return <p>{carriersError}</p>; // Handle carrier context errors
-  if (isCarriersLoading) return <p>Loading carriers...</p>; // Handle carrier loading state
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh', // Full viewport height
+        }}
+      >
+        <p>Loading...</p>
+      </Box>
+    );
+  } // Handle carrier loading state
 
   return (
     <Stack
@@ -194,7 +229,7 @@ export default function Dashboard() {
         sx={{ m: 2 }}
       >
         <Stack direction={'row'} gap={4} sx={{ pl: 5 }}>
-          <Typography variant="h6" component="div">
+          <Typography variant="h4" component="div">
             Dashboard
           </Typography>
           <Button
@@ -271,14 +306,6 @@ export default function Dashboard() {
             onChange={(_, newValue) => handleStatusUpdate(newValue || '')}
             renderInput={(params) => <TextField {...params} label="Status" />}
           />
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => handleStatusUpdate('Delivered')}
-            sx={{ mt: 2 }}
-          >
-            Save
-          </Button>
         </Box>
       </Modal>
     </Stack>

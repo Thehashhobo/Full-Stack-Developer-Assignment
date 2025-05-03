@@ -10,5 +10,6 @@ obj/
 *.nuget/
 *.nupkg
 packages/
+Logs/
 project.lock.json
 project.fragment.lock.json
