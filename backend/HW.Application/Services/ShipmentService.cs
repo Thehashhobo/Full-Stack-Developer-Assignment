@@ -44,15 +44,16 @@ namespace HW.Application.Services
                 TotalCount = totalCount
             };
         }
+        
+        // dont need
+        // public async Task<ShipmentDTO> GetShipmentByIdAsync(int id)
+        // {
+        //     // Fetch shipment by ID
+        //     var shipment = await _shipmentRepository.GetShipmentByIdAsync(id);
 
-        public async Task<ShipmentDTO> GetShipmentByIdAsync(int id)
-        {
-            // Fetch shipment by ID
-            var shipment = await _shipmentRepository.GetShipmentByIdAsync(id);
-
-            // Map domain entity to DTO
-            return _mapper.Map<ShipmentDTO>(shipment);
-        }
+        //     // Map domain entity to DTO
+        //     return _mapper.Map<ShipmentDTO>(shipment);
+        // }
 
         public async Task AddShipmentAsync(ShipmentDTO shipmentDTO)
         {
@@ -63,21 +64,21 @@ namespace HW.Application.Services
             await _shipmentRepository.AddShipmentAsync(shipment);
         }
 
-        public async Task UpdateShipmentAsync(UpdateShipmentStatusDTO updateDTO)
+    public async Task UpdateShipmentAsync(int id, UpdateShipmentStatusDTO updateShipmentStatusDTO)
+    {
+        // Fetch the shipment by ID
+        var shipment = await _shipmentRepository.GetShipmentByIdAsync(id);
+
+        if (shipment == null)
         {
-            // Fetch the shipment from the repository
-            var shipment = await _shipmentRepository.GetShipmentByIdAsync(updateDTO.Id);
-
-            if (shipment == null)
-            {
-                throw new KeyNotFoundException($"Shipment with ID {updateDTO.Id} not found.");
-            }
-
-            // Update the shipment's status
-            shipment.Status = updateDTO.Status;
-
-            // Save the updated shipment
-            await _shipmentRepository.UpdateShipmentAsync(shipment);
+            throw new KeyNotFoundException($"Shipment with ID {id} not found.");
         }
+
+        // Update the shipment's status using the DTO
+        shipment.Status = updateShipmentStatusDTO.Status;
+
+        // Save the updated shipment
+        await _shipmentRepository.UpdateShipmentAsync(shipment);
+    }
     }
 }

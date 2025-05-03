@@ -14,12 +14,11 @@ namespace HW.Application.DTOs
         public required int Carrier { get; set; } 
         public DateTime ShipDate { get; set; } 
         public DateTime ETA { get; set; } 
-        public required string Status { get; set; } 
+        public string? Status { get; set; } 
     }
 
     public class UpdateShipmentStatusDTO
     {
-        public int Id { get; set; } 
         public required string Status { get; set; }
     }
 

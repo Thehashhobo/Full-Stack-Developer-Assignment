@@ -13,9 +13,9 @@ public partial class Shipment
 
     public int CarrierId { get; set; }
 
-    public DateOnly ShipDate { get; set; }
+    public DateTime ShipDate { get; set; }
 
-    public DateOnly Eta { get; set; }
+    public DateTime Eta { get; set; }
 
     public string Status { get; set; } = null!;
 

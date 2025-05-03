@@ -10,7 +10,14 @@ namespace HW.Application.Mappings
         {
             CreateMap<Carrier, CarrierDTO>().ReverseMap();
 
-            CreateMap<Shipment, ShipmentDTO>().ReverseMap();
+            // Shipment to ShipmentDTO mapping
+            CreateMap<Shipment, ShipmentDTO>()
+                .ForMember(dest => dest.Carrier, opt => opt.MapFrom(src => src.CarrierId));
+
+            // Reverse mapping: ShipmentDTO to Shipment
+            CreateMap<ShipmentDTO, Shipment>()
+                .ForMember(dest => dest.CarrierId, opt => opt.MapFrom(src => src.Carrier))
+                .ForMember(dest => dest.Carrier, opt => opt.Ignore()); // Ignore navigation property
 
             CreateMap<UpdateShipmentStatusDTO, Shipment>(); //unnecessary mapping,
         }

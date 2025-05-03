@@ -9,7 +9,7 @@ using AutoMapper;
 
 namespace HW.Application.Services
 {
-    internal class CarrierService : ICarrierService
+    public class CarrierService : ICarrierService
     {
         private readonly ICarrierRepository _carrierRepository;
         private readonly IMapper _mapper;

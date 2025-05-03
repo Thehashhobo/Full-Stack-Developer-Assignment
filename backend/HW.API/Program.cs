@@ -2,6 +2,9 @@ using HW.Application.Mappings;
 using HW.Domain.Entities;
 using HW.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using HW.Application.Interfaces;
+using HW.Infrastructure;
+using HW.Application.Services;
 
 namespace HW.API
 {
@@ -21,6 +24,10 @@ namespace HW.API
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
             builder.Services.AddAutoMapper(typeof(MappingProfile));
+            builder.Services.AddScoped<IShipmentRepository, ShipmentRepository>();
+            builder.Services.AddScoped<IShipmentService, ShipmentService>();
+            builder.Services.AddScoped<ICarrierRepository, CarrierRepository>();
+            builder.Services.AddScoped<ICarrierService, CarrierService>();
 
 
             builder.Services.AddDbContext<AppDbContext>(options =>
