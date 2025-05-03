@@ -24,7 +24,13 @@ type FormInputs = {
 export default function AddShipment() {
   const router = useRouter();
   const { handleSubmit, control } = useForm<FormInputs>({
-    defaultValues: { shipDate: dayjs(), eta: dayjs() }, // Use dayjs objects
+    defaultValues: {
+      origin: '', // Provide an initial value
+      destination: '', // Provide an initial value
+      carrier: '', // Provide an initial value
+      shipDate: dayjs(), // Use dayjs object for date fields
+      eta: dayjs(), // Use dayjs object for date fields
+    },
   });
   const [submitting, setSubmitting] = useState(false);
 
