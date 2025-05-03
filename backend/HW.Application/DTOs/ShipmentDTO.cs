@@ -12,8 +12,8 @@ namespace HW.Application.DTOs
         public required string Origin { get; set; }
         public required string Destination { get; set; } 
         public required int Carrier { get; set; } 
-        public DateTime ShipDate { get; set; } 
-        public DateTime ETA { get; set; } 
+        public required DateTime ShipDate { get; set; } 
+        public required DateTime ETA { get; set; } 
         public string? Status { get; set; } 
     }
 

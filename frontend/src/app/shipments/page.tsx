@@ -12,40 +12,42 @@ import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { Controller, useForm } from 'react-hook-form';
 import { useState } from 'react';
 import dayjs, { Dayjs } from 'dayjs';
+import { useCarrierContext } from '@/components/CarrierContext';
+import { addShipment } from '../../lib/api'; // Import the addShipment function
 
 type FormInputs = {
   origin: string;
   destination: string;
-  carrier: string;
+  carrier: number;
   shipDate: Dayjs;
   eta: Dayjs;
 };
 
 export default function AddShipment() {
   const router = useRouter();
+  const { carriers, isLoading: isCarriersLoading, error: carriersError } = useCarrierContext(); // Use CarrierContext
   const { handleSubmit, control } = useForm<FormInputs>({
     defaultValues: {
-      origin: '', // Provide an initial value
-      destination: '', // Provide an initial value
-      carrier: '', // Provide an initial value
-      shipDate: dayjs(), // Use dayjs object for date fields
-      eta: dayjs(), // Use dayjs object for date fields
+      origin: '',
+      destination: '',
+      carrier: undefined,
+      shipDate: dayjs(),
+      eta: dayjs(),
     },
   });
   const [submitting, setSubmitting] = useState(false);
 
   const onSubmit = async (values: FormInputs) => {
+    values.carrier = carriers.nameToId[values.carrier]; // Convert carrier name to ID
     setSubmitting(true);
-    await fetch('/api/shipments', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...values,
-        shipDate: values.shipDate.toISOString(), // Convert to ISO string
-        eta: values.eta.toISOString(), // Convert to ISO string
-      }),
-    });
-    router.push('/dashboard');
+    try {
+      await addShipment(values); // Use the addShipment function from api.ts
+      router.push('/dashboard'); // Redirect to the dashboard after successful submission
+    } catch (err) {
+      console.error('Failed to add shipment:', err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -84,7 +86,7 @@ export default function AddShipment() {
           rules={{ required: true }}
           render={({ field }) => (
             <Autocomplete
-              options={['UPS', 'DHL', 'FedEx']}
+              options={Object.values(carriers.idToName)}
               onChange={(_, v) => field.onChange(v)}
               renderInput={(params) => <TextField {...params} label="Carrier" fullWidth />}
             />

@@ -12,16 +12,28 @@ namespace HW.API
     {
         public static void Main(string[] args)
         {
+            var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
             var builder = WebApplication.CreateBuilder(args);
+
+            // Add CORS policy
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy(name: MyAllowSpecificOrigins,
+                                  policy =>
+                                  {
+                                      policy.WithOrigins("http://localhost:3000") // Allow requests from your frontend
+                                            .AllowAnyHeader() // Allow any headers
+                                            .AllowAnyMethod(); // Allow any HTTP methods (GET, POST, etc.)
+                                  });
+            });
 
             // Register Swagger services
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            // Add services to the container.
-
+            // Add services to the container
             builder.Services.AddControllers();
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
             builder.Services.AddAutoMapper(typeof(MappingProfile));
             builder.Services.AddScoped<IShipmentRepository, ShipmentRepository>();
@@ -29,14 +41,12 @@ namespace HW.API
             builder.Services.AddScoped<ICarrierRepository, CarrierRepository>();
             builder.Services.AddScoped<ICarrierService, CarrierService>();
 
-
             builder.Services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
- 
+                options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             var app = builder.Build();
-            // middleware
-            // Configure the HTTP request pipeline.
+
+            // Middleware
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -45,8 +55,14 @@ namespace HW.API
 
             app.UseHttpsRedirection();
 
-            app.UseAuthorization();
+            app.UseStaticFiles();
 
+            app.UseRouting();
+
+            // Use the named CORS policy
+            app.UseCors(MyAllowSpecificOrigins);
+
+            app.UseAuthorization();
 
             app.MapControllers();
 

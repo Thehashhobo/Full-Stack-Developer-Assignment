@@ -12,25 +12,23 @@ import {
   Button,
   Modal,
 } from '@mui/material';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import dayjs, { Dayjs } from 'dayjs';
-import { useState, useEffect} from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { fetchShipments, updateShipmentStatus } from '../../lib/api'; // Import API functions
+import { useCarrierContext } from '../../components/CarrierContext'; // Import CarrierContext
 
 export default function Dashboard() {
   const router = useRouter();
 
+  const { carriers, isLoading: isCarriersLoading, error: carriersError } = useCarrierContext(); // Use CarrierContext
+
   /* ---------------- toolbar state ---------------- */
-  const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null]>([
-    null,
-    null,
-  ]);
   const [status, setStatus] = useState<string | null>(null);
   const [carrier, setCarrier] = useState<string | null>(null);
 
   /* ---------------- pagination state ---------------- */
-
   const rowHeight = 52; // Default row height for MUI DataGrid
   const toolbarHeight = 120; // Approximate height of the toolbar and other elements
 
@@ -39,29 +37,9 @@ export default function Dashboard() {
     pageSize: 15, // Default page size
   });
 
-  useEffect(() => {
-    // Function to calculate the number of rows that fit in the viewport
-    const calculatePageSize = () => {
-      const screenHeight = window.innerHeight; // Get the viewport height
-      const devicePixelRatio = window.devicePixelRatio || 1; // Get the device pixel ratio
-      const normalizedHeight = screenHeight * devicePixelRatio; // Normalize the screen height
-      const availableHeight = normalizedHeight - toolbarHeight * devicePixelRatio; // Adjust for toolbar height
-      const rowsPerPage = Math.floor(availableHeight / (rowHeight * devicePixelRatio)); // Calculate rows per page
-
-      // Update the pagination model with the calculated page size
-      setPaginationModel((prev) => ({
-        ...prev,
-        pageSize: rowsPerPage > 0 ? rowsPerPage : 1, // Ensure at least 1 row per page
-      }));
-      console.log('Rows per page:', rowsPerPage); // Debugging log
-    };
-
-    calculatePageSize(); // Initial calculation
-
-    // Recalculate on window resize
-    window.addEventListener('resize', calculatePageSize);
-    return () => window.removeEventListener('resize', calculatePageSize);
-  }, []); // Empty dependency array ensures this runs once on mount
+  const [data, setData] = useState<any[]>([]); // Data for the DataGrid
+  const [isLoading, setIsLoading] = useState(false); // Loading state
+  const [error, setError] = useState<string | null>(null); // Error state
 
   /* ---------------- modal state ---------------- */
   const [open, setOpen] = useState(false);
@@ -77,191 +55,68 @@ export default function Dashboard() {
     setSelectedRow(null);
   };
 
-  const handleStatusUpdate = (newStatus: string) => {
+  /* ---------------- Update status ---------------- */
+  const handleStatusUpdate = async (newStatus: string) => {
     if (selectedRow) {
-      const updatedData = data.map((row) =>
-        row.id === selectedRow.id ? { ...row, status: newStatus } : row
-      );
-      setData(updatedData);
-      handleClose();
+      try {
+        await updateShipmentStatus(selectedRow.id, newStatus); // Use API function
+
+        // Update the local data after a successful API call
+        const updatedData = data.map((row) =>
+          row.id === selectedRow.id ? { ...row, status: newStatus } : row
+        );
+        setData(updatedData);
+        handleClose();
+      } catch (err) {
+        console.error(err);
+        setError('Failed to update shipment status');
+      }
     }
   };
 
-  /* -------------- temporary data -------------- */
-  const [data, setData] = useState([
-    {
-      id: 1,
-      origin: 'New York',
-      destination: 'Los Angeles',
-      carrier: 'UPS',
-      shipDate: dayjs().subtract(9, 'days').toISOString(),
-      eta: dayjs().add(2, 'days').toISOString(),
-      status: 'In Transit',
-    },
-    {
-      id: 2,
-      origin: 'Chicago',
-      destination: 'Houston',
-      carrier: 'FedEx',
-      shipDate: dayjs().subtract(3, 'days').toISOString(),
-      eta: dayjs().add(1, 'days').toISOString(),
-      status: 'Delayed',
-    },
-    {
-      id: 3,
-      origin: 'San Francisco',
-      destination: 'Seattle',
-      carrier: 'DHL',
-      shipDate: dayjs().subtract(7, 'days').toISOString(),
-      eta: dayjs().subtract(16, 'days').toISOString(),
-      status: 'Delivered',
-    },
-    {
-        id: 4,
-        origin: 'San Francisco',
-        destination: 'Seattle',
-        carrier: 'DHL',
-        shipDate: dayjs().subtract(27, 'days').toISOString(),
-        eta: dayjs().subtract(13, 'days').toISOString(),
-        status: 'Delivered',
-      },
-      {
-        id: 5,
-        origin: 'San Francisco',
-        destination: 'Seattle',
-        carrier: 'DHL',
-        shipDate: dayjs().subtract(17, 'days').toISOString(),
-        eta: dayjs().subtract(1, 'days').toISOString(),
-        status: 'Delivered',
-      },
-      {
-        id: 6,
-        origin: 'San Francisco',
-        destination: 'Seattle',
-        carrier: 'DHL',
-        shipDate: dayjs().subtract(7, 'days').toISOString(),
-        eta: dayjs().subtract(1, 'days').toISOString(),
-        status: 'Delivered',
-      },
-      {
-        id: 7,
-        origin: 'San Francisco',
-        destination: 'Seattle',
-        carrier: 'DHL',
-        shipDate: dayjs().subtract(7, 'days').toISOString(),
-        eta: dayjs().subtract(1, 'days').toISOString(),
-        status: 'Delivered',
-      },
-      {
-        id: 8,
-        origin: 'San Francisco',
-        destination: 'Seattle',
-        carrier: 'DHL',
-        shipDate: dayjs().subtract(7, 'days').toISOString(),
-        eta: dayjs().subtract(1, 'days').toISOString(),
-        status: 'Delivered',
-      },
-      {
-        id: 9,
-        origin: 'San Francisco',
-        destination: 'Seattle',
-        carrier: 'DHL',
-        shipDate: dayjs().subtract(7, 'days').toISOString(),
-        eta: dayjs().subtract(1, 'days').toISOString(),
-        status: 'Delivered',
-      },
-      {
-        id: 10,
-        origin: 'San Francisco',
-        destination: 'Seattle',
-        carrier: 'DHL',
-        shipDate: dayjs().subtract(7, 'days').toISOString(),
-        eta: dayjs().subtract(1, 'days').toISOString(),
-        status: 'Delivered',
-      },
-      {
-        id: 11,
-        origin: 'San Francisco',
-        destination: 'Seattle',
-        carrier: 'DHL',
-        shipDate: dayjs().subtract(7, 'days').toISOString(),
-        eta: dayjs().subtract(1, 'days').toISOString(),
-        status: 'Delivered',
-      },
-      {
-        id: 12,
-        origin: 'San Francisco',
-        destination: 'Seattle',
-        carrier: 'DHL',
-        shipDate: dayjs().subtract(7, 'days').toISOString(),
-        eta: dayjs().subtract(1, 'days').toISOString(),
-        status: 'Delivered',
-      },
-      {
-        id: 13,
-        origin: 'San Francisco',
-        destination: 'Seattle',
-        carrier: 'DHL',
-        shipDate: dayjs().subtract(7, 'days').toISOString(),
-        eta: dayjs().subtract(1, 'days').toISOString(),
-        status: 'Delivered',
-      },
-      {
-        id: 14,
-        origin: 'San Francisco',
-        destination: 'Seattle',
-        carrier: 'DHL',
-        shipDate: dayjs().subtract(7, 'days').toISOString(),
-        eta: dayjs().subtract(1, 'days').toISOString(),
-        status: 'Delivered',
-      },
-      {
-        id: 15,
-        origin: 'San Francisco',
-        destination: 'Seattle',
-        carrier: 'DHL',
-        shipDate: dayjs().subtract(7, 'days').toISOString(),
-        eta: dayjs().subtract(1, 'days').toISOString(),
-        status: 'Delivered',
-      },
-      {
-        id: 16,
-        origin: 'San Francisco',
-        destination: 'Seattle',
-        carrier: 'DHL',
-        shipDate: dayjs().subtract(7, 'days').toISOString(),
-        eta: dayjs().subtract(1, 'days').toISOString(),
-        status: 'Delivered',
-      },
-      {
-        id: 17,
-        origin: 'San Francisco',
-        destination: 'Seattle',
-        carrier: 'DHL',
-        shipDate: dayjs().subtract(7, 'days').toISOString(),
-        eta: dayjs().subtract(1, 'days').toISOString(),
-        status: 'Delivered',
-      },
-      {
-        id: 18,
-        origin: 'San Francisco',
-        destination: 'Seattle',
-        carrier: 'DHL',
-        shipDate: dayjs().subtract(7, 'days').toISOString(),
-        eta: dayjs().subtract(1, 'days').toISOString(),
-        status: 'Delivered',
-      },
-  ]);
+  /* ---------------- Fetch Data ---------------- */
+  const fetchData = async () => {
+    console.log('carriers', carrier ? carriers.nameToId[carrier] : null); // Debugging line
+    setIsLoading(true);
+    setError(null);
 
-  const isLoading = false; // Simulate loading state
-  const error = null; // Simulate no error
+    try {
+      const shipments = await fetchShipments({
+        page: paginationModel.page,
+        pageSize: paginationModel.pageSize,
+        status,
+        carrier: carrier ? carriers.nameToId[carrier] : null
+      }); // Use API function
+
+      // Add carrierId to the data and keep the translated carrier name
+      const updatedData = shipments.map((shipment: any) => ({
+        ...shipment,
+        carrierId: shipment.carrier, // Keep the original carrier ID
+        carrier: carriers.idToName[shipment.carrier] || `Unknown Carrier (${shipment.carrier})`, // Translate carrier ID to name
+      }));
+
+      setData(updatedData || []);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to fetch shipments');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isCarriersLoading) {
+      fetchData();
+    }
+  }, [paginationModel.page, paginationModel.pageSize, status, carrier ? carriers.nameToId[carrier] : null, isCarriersLoading]);
 
   /* ----------------- grid columns ----------------- */
   const columns: GridColDef[] = [
     { field: 'id', headerName: 'ID', width: 90 },
     { field: 'origin', headerName: 'Origin', flex: 1 },
     { field: 'destination', headerName: 'Destination', flex: 1 },
-    { field: 'carrier', headerName: 'Carrier', flex: 1 },
+    // { field: 'carrierId', headerName: 'Carrier ID', width: 120 }, // Column for carrier ID
+    { field: 'carrier', headerName: 'Carrier Name', flex: 1 }, // Column for carrier name
     {
       field: 'shipDate',
       headerName: 'Ship Date',
@@ -296,22 +151,22 @@ export default function Dashboard() {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 150,
+      flex: 1,
       renderCell: (params) => (
         <Button
           variant="outlined"
           size="small"
           onClick={() => handleOpen(params.row)}
-        //   sx={{ visibility: 'hidden' }}
         >
           Update Status
         </Button>
       ),
-      cellClassName: 'hover-button-cell',
     },
   ];
 
-  if (error) return <p>Failed to load.</p>;
+  if (error) return <p>{error}</p>;
+  if (carriersError) return <p>{carriersError}</p>; // Handle carrier context errors
+  if (isCarriersLoading) return <p>Loading carriers...</p>; // Handle carrier loading state
 
   return (
     <Stack
@@ -333,33 +188,19 @@ export default function Dashboard() {
         justifyContent="space-between"
         sx={{ m: 2 }}
       >
-        {/* Dashboard Title */}
-        <Stack direction={'row'} gap={4} sx={{pl: 5}}>
-        <Typography variant="h6" component="div">
-          Dashboard
-        </Typography>
-        <Button
+        <Stack direction={'row'} gap={4} sx={{ pl: 5 }}>
+          <Typography variant="h6" component="div">
+            Dashboard
+          </Typography>
+          <Button
             variant="contained"
             color="primary"
             onClick={() => router.push('/shipments')}
           >
             Create Shipment
-        </Button>
+          </Button>
         </Stack>
-        {/* Filters and Navigation */}
         <Stack direction="row" spacing={2} alignItems="center">
-          <DateTimePicker
-            label="From"
-            value={dateRange[0]}
-            onChange={(newValue) => setDateRange([newValue, dateRange[1]])}
-            slotProps={{ textField: { size: 'small' } }}
-          />
-          <DateTimePicker
-            label="To"
-            value={dateRange[1]}
-            onChange={(newValue) => setDateRange([dateRange[0], newValue])}
-            slotProps={{ textField: { size: 'small' } }}
-          />
           <Autocomplete
             options={['Pending', 'In Transit', 'Delayed', 'Delivered']}
             size="small"
@@ -369,28 +210,24 @@ export default function Dashboard() {
             renderInput={(params) => <TextField {...params} label="Status" />}
           />
           <Autocomplete
-            options={['UPS', 'DHL', 'FedEx']}
+            options={Object.values(carriers.idToName)} // Extract carrier names
             size="small"
             sx={{ width: 180 }}
             value={carrier}
             onChange={(_, v) => setCarrier(v)}
             renderInput={(params) => <TextField {...params} label="Carrier" />}
           />
-          <IconButton onClick={() => console.log('Refresh clicked')} title="Refresh">
+          <IconButton onClick={fetchData} title="Refresh">
             <RefreshIcon />
           </IconButton>
         </Stack>
       </Stack>
-
 
       {/* ----------- DataGrid ----------- */}
       <Box
         sx={{
           flex: 1,
           width: '100%',
-          '& .MuiDataGrid-cell:hover .hover-button-cell button': {
-            visibility: 'visible',
-          },
         }}
       >
         <DataGrid

@@ -1,5 +1,6 @@
 import { ThemeProviderWrapper } from '@/components/ThemeProviderWrapper';
 import { DateAdapterProvider } from '@/components/DateAdapterProvider';
+import { CarrierProvider } from '../components/CarrierContext';
 
 export const metadata = { title: 'Shipment Tracker' };
 
@@ -9,7 +10,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body> 
         <ThemeProviderWrapper>
           <DateAdapterProvider>
-            {children}
+            <CarrierProvider>
+              {children}
+            </CarrierProvider>
           </DateAdapterProvider>
         </ThemeProviderWrapper>
       </body>
