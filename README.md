@@ -25,7 +25,7 @@ This is a full-stack shipment tracking application built with:
 - npm (comes with Node.js)
 
 ### Backend
-- [.NET SDK 9.0 (Preview)](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
+- [.NET SDK 9.0](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
 - (Optional) EF Core CLI tools:
   ```bash
   dotnet tool install --global dotnet-ef
@@ -33,11 +33,13 @@ This is a full-stack shipment tracking application built with:
 ## Frontend Setup
 ```
 git clone https://github.com/Thehashhobo/Full-Stack-Developer-Assignment.git
-cd .\frontend\
+cd ./frontend/
 npm install
 npm run dev
 ```
 Dev server hosted at http://localhost:3000 
+
+(backend only allows connection from http://localhost:3000)
 
 ## Backend Setup
 ```
@@ -45,11 +47,12 @@ cd ./backend/HW.API/
 dotnet run
 ```
 API will be available at: http://localhost:5154
+
 Swagger UI: http://localhost:5154/swagger
 
 ### Database Setup 
+💡 Ideally, generate the database using migrations.
 A pre-seeded SQLite file shipment_tracker.db is included for demo purposes.
-💡 Ideally, generate the database using migrations:
 ```
 dotnet ef migrations add InitialCreate --project ../HW.Infrastructure
 dotnet ef database update --project ../HW.Infrastructure
