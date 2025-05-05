@@ -99,13 +99,13 @@ While I'm confident with the infrastructure and containerization process, deploy
 - **TypeScript**: Used for strong type safety and better integration with structured backend data.
 - **Carrier Context**: Reduced redundant API calls and simplified ID-to-name mapping after initially over-coupling to numeric Carrier IDs.
 - **Shipments Not in Context**: Kept shipments local to components since global usage was minimal.
+- **Data Arrangment**: mistake in not using server side for sorting. 
 - **Centralized API Access**: API logic centralized in `api.ts` for maintainability.
 - **React Hook Form**: Lightweight and effective for managing forms; easy to extend with validation.
 - **Responsive Design**: Optimized for desktop. Mobile support exists but was not prioritized due to scope.
 - **Styling**: Functional but minimal. Needs improvement with better theming, feedback states, and modern design.
-- **Performance**: UI feels sluggish with larger datasets. Could benefit from virtualization (`react-window`) and memoization.
-- **Global State**: Introducing tools like Zustand or Redux Toolkit would improve state sharing as app complexity grows.
 - **Validation**: Should add client-side schema validation (e.g., using `Zod` or `Yup`) to improve form robustness.
+
 
 ---
 
