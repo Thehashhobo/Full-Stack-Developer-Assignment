@@ -13,44 +13,27 @@ import {
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import dayjs, { Dayjs } from 'dayjs';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchShipments, updateShipmentStatus } from '../../lib/api'; // Import API functions
-import { useCarrierContext } from '../../components/CarrierContext'; // Import CarrierContext
+
+import { fetchShipments, updateShipmentStatus } from '../../lib/api'; 
+import { useCarrierContext } from '../../components/CarrierContext'; 
+import ShipmentDataGrid from './components/ShipmentDataGrid';
 
 export default function Dashboard() {
   const router = useRouter();
   const [data, setData] = useState<any[]>([]); // Data for the DataGrid
   const [isLoading, setIsLoading] = useState(false); // Loading state
+  const totalItemsSet = useRef(false); // Track if totalItems has been set
+  const hasMounted = useRef(false);
   const [error, setError] = useState<string | null>(null); // Error state
   const { carriers, isLoading: isCarriersLoading, error: carriersError } = useCarrierContext(); // Use CarrierContext
 
   /* ---------------- toolbar state ---------------- */
   const [status, setStatus] = useState<string | null>(null);
   const [carrier, setCarrier] = useState<string | null>(null);
+  // const [sortModel, setSortModel] = useState<{ field: string; sort: 'asc' | 'desc' } | null>(null);
 
-  /* ---------------- pagination state ---------------- */
-  const [totalItems, setTotalItems] = useState(15); // Total number of items for pagination
-  const rowHeight = 52; // Default row height for MUI DataGrid
-  const toolbarHeight = 160; // Approximate height of the toolbar and other elements
-  const [paginationModel, setPaginationModel] = useState({
-    page: 0,
-    pageSize: 1, // Default page size
-  });
-   // Function to calculate the number of rows that fit in the viewport
-   const calculatePageSize = () => {
-    const screenHeight = window.innerHeight; // Get the viewport height
-    const devicePixelRatio = window.devicePixelRatio || 1; // Get the device pixel ratio
-    const normalizedHeight = screenHeight * devicePixelRatio; // Normalize the screen height
-    const availableHeight = normalizedHeight - toolbarHeight * devicePixelRatio; // Adjust for toolbar height
-    const rowsPerPage = Math.floor(availableHeight / (rowHeight * devicePixelRatio)); // Calculate rows per page
-
-    // Update the pagination model with the calculated page size
-    setPaginationModel((prev) => ({
-      ...prev,
-      pageSize: rowsPerPage > 0 ? rowsPerPage : 1, // Ensure at least 1 row per page
-    }));
-  };
   /* ---------------- modal state ---------------- */
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<any>(null);
@@ -64,6 +47,15 @@ export default function Dashboard() {
     setOpen(false);
     setSelectedRow(null);
   };
+
+    /* ---------------- Update sort  ---------------- */
+  // const handleSortModelChange = (newSortModel: { field: string; sort: 'asc' | 'desc' }[]) => {
+  //   if (newSortModel.length > 0) {
+  //     setSortModel(newSortModel[0]); // Track the first sorting rule
+  //   } else {
+  //     setSortModel(null); // Clear sorting if no rules are applied
+  //   }
+  // };
 
   /* ---------------- Update status ---------------- */
   const handleStatusUpdate = async (newStatus: string) => {
@@ -83,12 +75,34 @@ export default function Dashboard() {
       }
     }
   };
+  
+
+  /* ---------------- pagination state ---------------- */
+  const [totalItems, setTotalItems] = useState(15); // Total number of shipments for pagination
+  const [paginationModel, setPaginationModel] = useState({
+    page: 0,
+    pageSize: 1, // Default page size
+  });
+   // Function to calculate the number of rows that fit in the viewport
+   const calculatePageSize = (): number => {
+    const rowHeight = 52; // Default row height for MUI DataGrid
+    const toolbarHeight = 160; // Approximate height of the toolbar and other elements
+    const screenHeight = window.innerHeight; // Get the viewport height
+    const devicePixelRatio = window.devicePixelRatio || 1; // Get the device pixel ratio
+    const normalizedHeight = screenHeight * devicePixelRatio; // Normalize the screen height
+    const availableHeight = normalizedHeight - toolbarHeight * devicePixelRatio; // Adjust for toolbar height
+    return Math.floor(availableHeight / (rowHeight * devicePixelRatio)); // Calculate and return rows per page
+  };
+
+  
 
   /* ---------------- Fetch Data ---------------- */
   const fetchData = async () => {
     setIsLoading(true);
     setError(null);
 
+    console.log('Fetching data...');
+    console.log('Pagination Model:', paginationModel);
     try {
       const fetchedData = await fetchShipments({
         page: paginationModel.page,
@@ -97,7 +111,10 @@ export default function Dashboard() {
         carrier: carrier ? carriers.nameToId[carrier] : null
       });
       const shipments = fetchedData.shipments || []; // Ensure shipments is an array
-      setTotalItems(fetchedData.totalCount || 10); // Set total items for pagination
+      if (!totalItemsSet.current) {
+        setTotalItems(fetchedData.totalCount || 10);
+        totalItemsSet.current = true; // Mark as set
+      }
 
       // Add carrierId to the data and keep the translated carrier name
       const updatedData = shipments.map((shipment: any) => ({
@@ -106,7 +123,9 @@ export default function Dashboard() {
         carrier: carriers.idToName[shipment.carrier] || `Unknown Carrier (${shipment.carrier})`, // Translate carrier ID to name
       }));
 
-      setData(updatedData || []);
+      // Append new data to the existing data
+      setData((prevData) => [...prevData, ...updatedData]);
+
     } catch (err) {
       console.error(err);
       setError('Failed to fetch shipments');
@@ -115,30 +134,58 @@ export default function Dashboard() {
     }
   };
 
-  // calculate page size after carriers are loaded
+  // initial fetch of data after dependent data is loaded
   useEffect(() => {
+    console.log('Initial effect');
     if (!isCarriersLoading) {
-      calculatePageSize();
+      paginationModel.pageSize = calculatePageSize();
+      fetchData();
     }
   }, [isCarriersLoading]);
 
   // Fetch data when page, filter or sort changes
   useEffect(() => {
-    if (paginationModel.pageSize > 1) {
-      fetchData();
+    if (hasMounted.current) {
+      const totalFetchedRows = paginationModel.page * paginationModel.pageSize;
+
+      // Fetch data only if the current data length is less than the required rows for the current page
+      if (data.length <= totalFetchedRows) {
+        fetchData();
+        console.log('Secondary effect');
+      }
+    } else {
+      hasMounted.current = true; // Mark as mounted after the first render
     }
-  }, [paginationModel.page, paginationModel.pageSize, status, carrier ? carriers.nameToId[carrier] : null]);
+  }, [paginationModel.page, status]);
+  //carrier ? carriers.nameToId[carrier] : null
+
+  // handles sorting locally
+  // useEffect(() => {
+  //   if (sortModel) {
+  //     const sortedData = [...data].sort((a, b) => {
+  //       const field = sortModel.field;
+  //       const order = sortModel.sort === 'asc' ? 1 : -1;
+  
+  //       if (a[field] < b[field]) return -1 * order;
+  //       if (a[field] > b[field]) return 1 * order;
+  //       return 0;
+  //     });
+  
+  //     setData(sortedData); // Update the data with the sorted version
+  //   }
+  // }, [sortModel]);
 
   /* ----------------- grid columns ----------------- */
   const columns: GridColDef[] = [
-    { field: 'id', headerName: 'ID', width: 90 },
-    { field: 'origin', headerName: 'Origin', flex: 1 },
-    { field: 'destination', headerName: 'Destination', flex: 1 },
+    { field: 'id', headerName: 'ID', filterable: false, width: 90 },
+    { field: 'origin', headerName: 'Origin', filterable: false, flex: 1 },
+    { field: 'destination', headerName: 'Destination', filterable: false, flex: 1 },
     // { field: 'carrierId', headerName: 'Carrier ID', width: 120 }, // Column for carrier ID
-    { field: 'carrier', headerName: 'Carrier Name', flex: 1 }, // Column for carrier name
+    { field: 'carrier', headerName: 'Carrier Name', filterable: false, flex: 1 }, // Column for carrier name
     {
       field: 'shipDate',
       headerName: 'Ship Date',
+      filterable: false,
       flex: 1,
       valueGetter: (params: GridCellParams) => {
         if (!params) return ''; 
@@ -148,6 +195,7 @@ export default function Dashboard() {
     {
       field: 'eta',
       headerName: 'ETA',
+      filterable: false,
       flex: 1,
       valueGetter: (params: GridCellParams) => {
         if (!params) return ''; 
@@ -157,6 +205,7 @@ export default function Dashboard() {
     {
       field: 'status',
       headerName: 'Status',
+      filterable: false,
       flex: 1,
       renderCell: ({ value }) => (
         <Chip
@@ -241,6 +290,7 @@ export default function Dashboard() {
           </Button>
         </Stack>
         <Stack direction="row" spacing={2} alignItems="center">
+          {/* Filter by status and carrier */}
           <Autocomplete
             options={['Pending', 'In Transit', 'Delayed', 'Delivered']}
             size="small"
@@ -249,6 +299,7 @@ export default function Dashboard() {
             onChange={(_, v) => setStatus(v)}
             renderInput={(params) => <TextField {...params} label="Status" />}
           />
+          {/* Filter by status and carrier */}
           <Autocomplete
             options={Object.values(carriers.idToName)} // Extract carrier names
             size="small"
@@ -264,24 +315,14 @@ export default function Dashboard() {
       </Stack>
 
       {/* ----------- DataGrid ----------- */}
-      <Box
-        sx={{
-          flex: 1,
-          width: '100%',
-        }}
-      >
-        <DataGrid
-          rows={data}
-          paginationMode="server"
-          rowCount={totalItems}
-          columns={columns}
-          loading={isLoading}
-          paginationModel={paginationModel}
-          onPaginationModelChange={(model) => setPaginationModel(model)}
-          pageSizeOptions={[paginationModel.pageSize]}
-          disableRowSelectionOnClick
-        />
-      </Box>
+      <ShipmentDataGrid
+        rows={data}
+        columns={columns}
+        loading={isLoading}
+        rowCount={totalItems}
+        paginationModel={paginationModel}
+        onPaginationModelChange={setPaginationModel}
+      />
 
       {/* ----------- Modal ----------- */}
       <Modal open={open} onClose={handleClose}>
