@@ -1,5 +1,5 @@
 'use client';
-import { DataGrid, GridColDef, GridCellParams } from '@mui/x-data-grid';
+import { GridSortModel , GridColDef, GridCellParams } from '@mui/x-data-grid';
 import {
   Box,
   Chip,
@@ -28,6 +28,7 @@ export default function Dashboard() {
   const hasMounted = useRef(false);
   const [error, setError] = useState<string | null>(null); // Error state
   const { carriers, isLoading: isCarriersLoading, error: carriersError } = useCarrierContext(); // Use CarrierContext
+  const [sortModel, setSortModel] = useState<GridSortModel>([]);
 
   /* ---------------- toolbar state ---------------- */
   const [status, setStatus] = useState<string | null>(null);
@@ -49,14 +50,27 @@ export default function Dashboard() {
   };
 
     /* ---------------- Update sort  ---------------- */
-  // const handleSortModelChange = (newSortModel: { field: string; sort: 'asc' | 'desc' }[]) => {
-  //   if (newSortModel.length > 0) {
-  //     setSortModel(newSortModel[0]); // Track the first sorting rule
-  //   } else {
-  //     setSortModel(null); // Clear sorting if no rules are applied
-  //   }
-  // };
-
+    // 1) Reusable sort function
+    function applySort(rows: any[], sortModel: GridSortModel): any[] {
+      if (!sortModel || sortModel.length === 0) return rows;
+      const { field, sort } = sortModel[0];
+      return [...rows].sort((a, b) => {
+        const aVal = a[field] ?? '';
+        const bVal = b[field] ?? '';
+        if (aVal < bVal) return sort === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sort === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    const handleSortModelChange = (newModel: GridSortModel) => {
+      setSortModel(newModel);
+      // re‑sort whatever you’ve already loaded:
+      setData((prev) => applySort(prev, newModel));
+  
+      // Reset to first page:
+      setPaginationModel((model) => ({ ...model, page: 0 }));
+    };
+  
   /* ---------------- Update status ---------------- */
   const handleStatusUpdate = async (newStatus: string) => {
     if (selectedRow) {
@@ -102,7 +116,7 @@ export default function Dashboard() {
     setError(null);
 
     console.log('Fetching data...');
-    console.log('Pagination Model:', paginationModel);
+    // console.log('Pagination Model:', paginationModel);
     try {
       const fetchedData = await fetchShipments({
         page: paginationModel.page,
@@ -122,9 +136,22 @@ export default function Dashboard() {
         carrierId: shipment.carrier, // Keep the original carrier ID
         carrier: carriers.idToName[shipment.carrier] || `Unknown Carrier (${shipment.carrier})`, // Translate carrier ID to name
       }));
-
+      console.log('Updated Data:', updatedData); // Log the updated data
+      
+      console.log('Status:', status); // Log the status filter
+      console.log('Carrier:', carrier); // Log the carrier filter
+      if (status || carrier) {
+        // If there are filters applied, set the data directly
+        setData(updatedData);
+      } else {
+        setData((prev) => {
+          const combined = [...prev, ...updatedData];
+          return applySort(combined, sortModel);
+        });
+      }  
+      console.log('all Data:', data); // Log the updated data
       // Append new data to the existing data
-      setData((prevData) => [...prevData, ...updatedData]);
+       // Sort the data before setting it
 
     } catch (err) {
       console.error(err);
@@ -136,7 +163,7 @@ export default function Dashboard() {
 
   // initial fetch of data after dependent data is loaded
   useEffect(() => {
-    console.log('Initial effect');
+    // console.log('Initial effect');
     if (!isCarriersLoading) {
       paginationModel.pageSize = calculatePageSize();
       fetchData();
@@ -151,7 +178,7 @@ export default function Dashboard() {
       // Fetch data only if the current data length is less than the required rows for the current page
       if (data.length <= totalFetchedRows) {
         fetchData();
-        console.log('Secondary effect');
+        // console.log('Secondary effect');
       }
     } else {
       hasMounted.current = true; // Mark as mounted after the first render
@@ -159,21 +186,6 @@ export default function Dashboard() {
   }, [paginationModel.page, status]);
   //carrier ? carriers.nameToId[carrier] : null
 
-  // handles sorting locally
-  // useEffect(() => {
-  //   if (sortModel) {
-  //     const sortedData = [...data].sort((a, b) => {
-  //       const field = sortModel.field;
-  //       const order = sortModel.sort === 'asc' ? 1 : -1;
-  
-  //       if (a[field] < b[field]) return -1 * order;
-  //       if (a[field] > b[field]) return 1 * order;
-  //       return 0;
-  //     });
-  
-  //     setData(sortedData); // Update the data with the sorted version
-  //   }
-  // }, [sortModel]);
 
   /* ----------------- grid columns ----------------- */
   const columns: GridColDef[] = [
@@ -308,7 +320,11 @@ export default function Dashboard() {
             onChange={(_, v) => setCarrier(v)}
             renderInput={(params) => <TextField {...params} label="Carrier" />}
           />
-          <IconButton onClick={fetchData} title="Refresh">
+          <IconButton onClick={() => {
+            if (status || carrier) {
+              fetchData();
+            }
+          }} title="Refresh">
             <RefreshIcon />
           </IconButton>
         </Stack>
@@ -321,7 +337,10 @@ export default function Dashboard() {
         loading={isLoading}
         rowCount={totalItems}
         paginationModel={paginationModel}
-        onPaginationModelChange={setPaginationModel}
+        onPaginationModelChange={setPaginationModel}      
+        sortingMode='server'        // tell MUI you’re doing manual/server sorting  
+        sortModel={sortModel}               // controlled sort model  
+        onSortModelChange={handleSortModelChange}
       />
 
       {/* ----------- Modal ----------- */}

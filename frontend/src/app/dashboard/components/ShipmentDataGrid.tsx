@@ -1,4 +1,4 @@
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridSortModel } from '@mui/x-data-grid';
 import { Box } from '@mui/material';
 
 interface ShipmentDataGridProps {
@@ -8,6 +8,10 @@ interface ShipmentDataGridProps {
   rowCount: number;
   paginationModel: { page: number; pageSize: number };
   onPaginationModelChange: (model: { page: number; pageSize: number }) => void;
+
+  sortingMode?: 'client' | 'server';
+  sortModel?: GridSortModel;
+  onSortModelChange?: (model: GridSortModel) => void;
 }
 
 export default function ShipmentDataGrid({
@@ -17,6 +21,11 @@ export default function ShipmentDataGrid({
   rowCount,
   paginationModel,
   onPaginationModelChange,
+
+  // NEW sorting props:
+  sortingMode = 'client',
+  sortModel,
+  onSortModelChange,
 }: ShipmentDataGridProps) {
   return (
     <Box
@@ -26,10 +35,11 @@ export default function ShipmentDataGrid({
       }}
     >
       <DataGrid
+        // existing pagination & slicing
         rows={rows.slice(
-            paginationModel.page * paginationModel.pageSize,
-            (paginationModel.page + 1) * paginationModel.pageSize
-          )}
+          paginationModel.page * paginationModel.pageSize,
+          (paginationModel.page + 1) * paginationModel.pageSize
+        )}
         columns={columns}
         loading={loading}
         rowCount={rowCount}
@@ -38,6 +48,11 @@ export default function ShipmentDataGrid({
         onPaginationModelChange={onPaginationModelChange}
         pageSizeOptions={[paginationModel.pageSize]}
         disableRowSelectionOnClick
+
+        // forwarded sorting props
+        sortingMode={sortingMode}
+        sortModel={sortModel}
+        onSortModelChange={onSortModelChange}
       />
     </Box>
   );
